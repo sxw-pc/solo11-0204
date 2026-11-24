@@ -55,3 +55,18 @@ CREATE TABLE IF NOT EXISTS settlement (
     piece_id TEXT PRIMARY KEY REFERENCES piece(id), dispatch_id TEXT NOT NULL REFERENCES dispatch(id),
     assessment_id INTEGER NOT NULL REFERENCES assessment(seq), cents INTEGER NOT NULL CHECK(cents>=0)
 );
+
+CREATE TABLE IF NOT EXISTS bench_scale (
+    id TEXT PRIMARY KEY, cell TEXT NOT NULL, tolerance INTEGER NOT NULL CHECK(tolerance >= 0)
+);
+CREATE TABLE IF NOT EXISTS bench_check (
+    seq INTEGER PRIMARY KEY, id TEXT UNIQUE NOT NULL,
+    scale TEXT NOT NULL REFERENCES bench_scale, minute INTEGER NOT NULL CHECK(minute >= 0),
+    standard INTEGER NOT NULL CHECK(standard >= 0), display INTEGER NOT NULL, assessor TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS bench_weighing (
+    id TEXT PRIMARY KEY, scale TEXT NOT NULL REFERENCES bench_scale,
+    minute INTEGER NOT NULL CHECK(minute >= 0), item TEXT NOT NULL,
+    tare INTEGER NOT NULL, gross INTEGER NOT NULL CHECK(gross >= tare),
+    check_id TEXT NOT NULL REFERENCES bench_check(id), net INTEGER NOT NULL CHECK(net >= 0)
+);
