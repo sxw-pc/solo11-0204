@@ -4,7 +4,7 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
-from . import audit, evidence, loading, release, settlement
+from . import audit, evidence, isolation, loading, materials, release, settlement
 from .db import Refused, connect, transaction
 
 
@@ -16,6 +16,8 @@ ACTIONS = {
     'rework-slot': release.add_rework_slot, 'assess': release.assess,
     'reserve': release.reserve, 'finish-rework': release.finish,
     'dispatch': settlement.dispatch, 'balance': settlement.balance,
+    'material-arrival': materials.arrival, 'material-pick': materials.pick,
+    'material-return': materials.give_back, 'material-locate': isolation.locate,
 }
 
 

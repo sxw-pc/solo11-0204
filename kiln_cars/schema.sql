@@ -55,3 +55,7 @@ CREATE TABLE IF NOT EXISTS settlement (
     piece_id TEXT PRIMARY KEY REFERENCES piece(id), dispatch_id TEXT NOT NULL REFERENCES dispatch(id),
     assessment_id INTEGER NOT NULL REFERENCES assessment(seq), cents INTEGER NOT NULL CHECK(cents>=0)
 );
+
+CREATE TABLE IF NOT EXISTS material_carton (id TEXT PRIMARY KEY, lot TEXT NOT NULL, units INTEGER NOT NULL CHECK(units>0), document TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS material_pick (id TEXT PRIMARY KEY, carton TEXT NOT NULL REFERENCES material_carton, firing_id TEXT NOT NULL, car TEXT NOT NULL, zone TEXT NOT NULL, units INTEGER NOT NULL CHECK(units>0), FOREIGN KEY(firing_id,car,zone) REFERENCES kiln_slot(firing_id,car,zone));
+CREATE TABLE IF NOT EXISTS material_return (id TEXT PRIMARY KEY, pick TEXT NOT NULL REFERENCES material_pick, units INTEGER NOT NULL CHECK(units>0));

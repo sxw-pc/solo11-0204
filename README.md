@@ -34,3 +34,7 @@ python -B -m kiln_cars --db kiln.sqlite action --help
 
 数据库按操作获取 SQLite 写事务，冲突检查、扣占和过账在事务内完成。独立见证人使用与记录仪责任方不同的登记标识，登记员负责核对现场身份和见证片来源。温窗和色方规则是本地夹具口径，CLI 只记录业务证据和决定。
 
+
+## 耗材去向
+
+操作 material-arrival 按单一已知批次登记原箱数量与来源单，material-pick 将数量拨到登记的窑车和区，material-return 将实际退回量归还原箱。material-locate 列出一个批次的剩余库存和当前各位置保有的数量。
