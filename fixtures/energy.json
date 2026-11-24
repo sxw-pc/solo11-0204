@@ -1,0 +1,85 @@
+[
+  {
+    "action": "energy-meter",
+    "args": {
+      "meter_id": "M1",
+      "circuit": "heat",
+      "modulus": 100
+    }
+  },
+  {
+    "action": "energy-meter",
+    "args": {
+      "meter_id": "M2",
+      "circuit": "fan",
+      "modulus": 100
+    }
+  },
+  {
+    "action": "energy-reading",
+    "label": "H-start",
+    "args": {
+      "id": "H-start",
+      "meter_id": "M1",
+      "minute": 10,
+      "count": 97,
+      "document": "card-H-start"
+    }
+  },
+  {
+    "action": "energy-reading",
+    "label": "H-end",
+    "args": {
+      "id": "H-end",
+      "meter_id": "M1",
+      "minute": 20,
+      "count": 5,
+      "document": "card-H-end"
+    }
+  },
+  {
+    "action": "energy-reading",
+    "label": "F-start",
+    "args": {
+      "id": "F-start",
+      "meter_id": "M2",
+      "minute": 10,
+      "count": 20,
+      "document": "card-F-start"
+    }
+  },
+  {
+    "action": "energy-statement",
+    "label": "before second circuit",
+    "args": {
+      "begin": 10,
+      "end": 20,
+      "circuits": [
+        "heat",
+        "fan"
+      ]
+    }
+  },
+  {
+    "action": "energy-reading",
+    "args": {
+      "id": "F-end",
+      "meter_id": "M2",
+      "minute": 20,
+      "count": 27,
+      "document": "card-F-end"
+    }
+  },
+  {
+    "action": "energy-statement",
+    "label": "complete statement",
+    "args": {
+      "begin": 10,
+      "end": 20,
+      "circuits": [
+        "heat",
+        "fan"
+      ]
+    }
+  }
+]

@@ -55,3 +55,13 @@ CREATE TABLE IF NOT EXISTS settlement (
     piece_id TEXT PRIMARY KEY REFERENCES piece(id), dispatch_id TEXT NOT NULL REFERENCES dispatch(id),
     assessment_id INTEGER NOT NULL REFERENCES assessment(seq), cents INTEGER NOT NULL CHECK(cents>=0)
 );
+
+CREATE TABLE IF NOT EXISTS energy_meter (
+    id TEXT PRIMARY KEY, circuit TEXT NOT NULL UNIQUE, modulus INTEGER NOT NULL CHECK(modulus > 1)
+);
+CREATE TABLE IF NOT EXISTS energy_reading (
+    id TEXT PRIMARY KEY, meter_id TEXT NOT NULL REFERENCES energy_meter(id),
+    minute INTEGER NOT NULL CHECK(minute >= 0), count INTEGER NOT NULL CHECK(count >= 0),
+    document TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS energy_reading_calendar ON energy_reading (meter_id, minute);
