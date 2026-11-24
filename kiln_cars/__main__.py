@@ -4,7 +4,7 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
-from . import audit, evidence, loading, release, settlement
+from . import audit, evidence, loading, release, settlement, yard_map, yard_moves
 from .db import Refused, connect, transaction
 
 
@@ -16,6 +16,8 @@ ACTIONS = {
     'rework-slot': release.add_rework_slot, 'assess': release.assess,
     'reserve': release.reserve, 'finish-rework': release.finish,
     'dispatch': settlement.dispatch, 'balance': settlement.balance,
+    'yard-track': yard_map.track, 'yard-cart': yard_map.cart,
+    'yard-move': yard_moves.move, 'yard-status': yard_moves.status,
 }
 
 
@@ -72,4 +74,5 @@ def main():
 
 if __name__ == '__main__':
     raise SystemExit(main())
+
 

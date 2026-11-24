@@ -55,3 +55,14 @@ CREATE TABLE IF NOT EXISTS settlement (
     piece_id TEXT PRIMARY KEY REFERENCES piece(id), dispatch_id TEXT NOT NULL REFERENCES dispatch(id),
     assessment_id INTEGER NOT NULL REFERENCES assessment(seq), cents INTEGER NOT NULL CHECK(cents>=0)
 );
+
+CREATE TABLE IF NOT EXISTS yard_track (
+    id TEXT PRIMARY KEY, source TEXT NOT NULL, target TEXT NOT NULL, length INTEGER NOT NULL CHECK(length > 0)
+);
+CREATE TABLE IF NOT EXISTS yard_cart (
+    id TEXT PRIMARY KEY, node TEXT NOT NULL UNIQUE, length INTEGER NOT NULL CHECK(length > 0)
+);
+CREATE TABLE IF NOT EXISTS yard_move (
+    id TEXT PRIMARY KEY, cart TEXT NOT NULL REFERENCES yard_cart, track TEXT NOT NULL REFERENCES yard_track,
+    document TEXT NOT NULL
+);
