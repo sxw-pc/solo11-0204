@@ -34,6 +34,9 @@ def dispatch(db, id, order_id, piece_ids):
         assessment = release.latest(db, piece_id)
         if not release.is_current(db, assessment):
             raise Refused('piece assessment is stale after new zonal evidence')
+        history_block = release.delivery_blocked_by_history(db, piece_id)
+        if history_block is not None:
+            raise Refused(history_block)
         insert(db, 'settlement', piece_id=piece_id, dispatch_id=id, assessment_id=assessment['seq'],
                cents=piece_price(order, assessment['decision']))
     return manifest(db, id)

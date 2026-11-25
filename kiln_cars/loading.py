@@ -84,3 +84,79 @@ def lock(db, firing_id):
     return 'LOCKED'
 
 
+def open_refire(db, piece_id):
+    return db.execute("SELECT * FROM refire WHERE piece_id=? AND state='PLACED'",
+                      (piece_id,)).fetchone()
+
+
+def refire(db, piece_id, firing_id, car, zone):
+    """Move a rework-queued piece, via its held rework reservation, onto a
+    destination kiln slot in another firing for a re-firing."""
+    placement = one(db, 'SELECT * FROM placement WHERE piece_id=?', (piece_id,))
+    if open_refire(db, piece_id) is not None:
+        raise Refused('piece already has an unfinished refire')
+    claim = db.execute('''SELECT c.* FROM rework_claim c JOIN assessment a ON a.seq=c.assessment_id
+                          WHERE a.piece_id=? AND c.state='HELD'
+                          ORDER BY c.seq DESC LIMIT 1''', (piece_id,)).fetchone()
+    if claim is None:
+        raise Refused('refire needs a held rework reservation from the current assessment')
+    assessment = one(db, 'SELECT * FROM assessment WHERE seq=?', (claim['assessment_id'],))
+    if assessment['decision'] != 'REWORK_QUEUE':
+        raise Refused('refire source assessment must be rework-queued')
+    profile = load_profile(db, piece_id)
+    slot_row = one(db, 'SELECT * FROM kiln_slot WHERE firing_id=? AND car=? AND zone=?',
+                   (firing_id, car, zone))
+    reserved = one(db, 'SELECT * FROM rework_slot WHERE id=?', (claim['slot_id'],))
+    if reserved['body'] != profile['body']:
+        raise Refused('rework reservation body no longer matches the piece body')
+    require_state(db, firing_id, 'OPEN')
+    if db.execute('SELECT 1 FROM placement WHERE firing_id=? AND car=? AND zone=?',
+                  (firing_id, car, zone)).fetchone():
+        raise Refused('destination kiln position is occupied')
+    result = compatibility(db, firing_id, profile, slot_row)
+    if result != 'COMPATIBLE':
+        raise Refused(result)
+    seq = insert(db, 'refire', piece_id=piece_id, source_assessment_id=assessment['seq'],
+                 claim_id=claim['seq'], firing_id=firing_id, car=car, zone=zone, state='PLACED')
+    db.execute('DELETE FROM placement WHERE piece_id=?', (piece_id,))
+    insert(db, 'placement', piece_id=piece_id, firing_id=firing_id, car=car, zone=zone)
+    return {'refire': seq, 'state': 'PLACED', 'firing_id': firing_id, 'car': car, 'zone': zone}
+
+
+def finish_refire(db, piece_id):
+    """Confirm the re-firing actually happened: the destination batch must be
+    locked and its thermal evidence becomes the piece's new heat history."""
+    record = open_refire(db, piece_id)
+    if record is None:
+        raise Refused('piece has no unfinished refire')
+    destination = one(db, 'SELECT * FROM firing WHERE id=?', (record['firing_id'],))
+    if destination['state'] != 'LOCKED':
+        raise Refused('refire can only finish after the destination batch is locked')
+    from . import evidence
+    position = evidence.location(db, piece_id)
+    cutoff = evidence.versions(db, position)
+    thermal = evidence.temperature_decision(db, position, cutoff)
+    db.execute("UPDATE refire SET state='FIRED' WHERE seq=?", (record['seq'],))
+    db.execute("UPDATE rework_claim SET state='USED' WHERE seq=?", (record['claim_id'],))
+    return {'refire': record['seq'], 'state': 'FIRED', 'thermal': thermal,
+            'firing_id': position['firing_id'], 'car': position['car'], 'zone': position['zone'],
+            'trace_asof': cutoff[0], 'witness_asof': cutoff[1]}
+
+
+def withdraw_refire(db, piece_id):
+    """Take the piece back before the destination batch has fired. This attempt
+    never becomes a heat history and frees the rework position."""
+    record = open_refire(db, piece_id)
+    if record is None:
+        raise Refused('piece has no unfinished refire')
+    require_state(db, record['firing_id'], 'OPEN')
+    source = one(db, 'SELECT * FROM assessment WHERE seq=?', (record['source_assessment_id'],))
+    db.execute('DELETE FROM placement WHERE piece_id=?', (piece_id,))
+    insert(db, 'placement', piece_id=piece_id, firing_id=source['firing_id'],
+           car=source['car'], zone=source['zone'])
+    db.execute("UPDATE refire SET state='WITHDRAWN' WHERE seq=?", (record['seq'],))
+    db.execute("UPDATE rework_claim SET state='RELEASED' WHERE seq=?", (record['claim_id'],))
+    return {'refire': record['seq'], 'state': 'WITHDRAWN',
+            'firing_id': source['firing_id'], 'car': source['car'], 'zone': source['zone']}
+
+

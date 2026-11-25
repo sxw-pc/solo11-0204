@@ -15,6 +15,8 @@ ACTIONS = {
     'witness': evidence.capture_witness, 'zone': evidence.zone_status,
     'rework-slot': release.add_rework_slot, 'assess': release.assess,
     'reserve': release.reserve, 'finish-rework': release.finish,
+    'refire': loading.refire, 'finish-refire': loading.finish_refire,
+    'withdraw-refire': loading.withdraw_refire, 'heat-history': release.heat_exposures,
     'dispatch': settlement.dispatch, 'balance': settlement.balance,
 }
 

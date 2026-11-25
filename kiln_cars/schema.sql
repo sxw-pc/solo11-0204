@@ -35,16 +35,27 @@ CREATE TABLE IF NOT EXISTS witness (
     FOREIGN KEY(firing_id,car,zone) REFERENCES kiln_slot(firing_id,car,zone)
 );
 CREATE TABLE IF NOT EXISTS assessment (
-    seq INTEGER PRIMARY KEY, piece_id TEXT NOT NULL REFERENCES placement(piece_id),
+    seq INTEGER PRIMARY KEY, piece_id TEXT NOT NULL REFERENCES piece(id),
+    firing_id TEXT NOT NULL, car TEXT NOT NULL, zone TEXT NOT NULL,
     trace_asof INTEGER NOT NULL, witness_asof INTEGER NOT NULL, surface TEXT NOT NULL,
-    thermal TEXT NOT NULL, decision TEXT NOT NULL, reason TEXT NOT NULL
+    thermal TEXT NOT NULL, decision TEXT NOT NULL, reason TEXT NOT NULL,
+    FOREIGN KEY(firing_id,car,zone) REFERENCES kiln_slot(firing_id,car,zone)
 );
+CREATE TABLE IF NOT EXISTS refire (
+    seq INTEGER PRIMARY KEY, piece_id TEXT NOT NULL REFERENCES piece(id),
+    source_assessment_id INTEGER NOT NULL REFERENCES assessment(seq),
+    claim_id INTEGER NOT NULL REFERENCES rework_claim(seq),
+    firing_id TEXT NOT NULL, car TEXT NOT NULL, zone TEXT NOT NULL,
+    state TEXT NOT NULL CHECK(state IN ('PLACED','FIRED','WITHDRAWN')),
+    FOREIGN KEY(firing_id,car,zone) REFERENCES kiln_slot(firing_id,car,zone)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS open_refire_per_piece ON refire(piece_id) WHERE state='PLACED';
 CREATE TABLE IF NOT EXISTS rework_slot (
     id TEXT PRIMARY KEY, body TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS rework_claim (
     seq INTEGER PRIMARY KEY, slot_id TEXT NOT NULL REFERENCES rework_slot(id),
-    assessment_id INTEGER NOT NULL UNIQUE REFERENCES assessment(seq),
+    assessment_id INTEGER NOT NULL REFERENCES assessment(seq),
     state TEXT NOT NULL CHECK(state IN ('HELD','RELEASED','USED'))
 );
 CREATE UNIQUE INDEX IF NOT EXISTS held_slot ON rework_claim(slot_id) WHERE state='HELD';

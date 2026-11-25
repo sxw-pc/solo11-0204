@@ -44,14 +44,27 @@ def location(db, piece_id):
                      WHERE a.piece_id=?''', (piece_id,))
 
 
+def slot_position(db, firing_id, car, zone):
+    """A kiln position independent of which piece currently occupies it."""
+    return one(db, '''SELECT k.*, f.ticks, f.state, f.atmosphere, f.logger_owner
+                      FROM kiln_slot k JOIN firing f ON f.id=k.firing_id
+                      WHERE k.firing_id=? AND k.car=? AND k.zone=?''',
+              (firing_id, car, zone))
+
+
 def location_key(position):
     return tuple(position[key] for key in ('firing_id', 'car', 'zone'))
 
 
-def versions(db, position):
+def versions_at(db, firing_id, car, zone):
     return tuple(db.execute(f'''SELECT COALESCE(MAX(seq),0) FROM {table}
-                            WHERE firing_id=? AND car=? AND zone=?''', location_key(position)).fetchone()[0]
+                            WHERE firing_id=? AND car=? AND zone=?''',
+                            (firing_id, car, zone)).fetchone()[0]
                  for table in ('trace', 'witness'))
+
+
+def versions(db, position):
+    return versions_at(db, *location_key(position))
 
 
 def temperature_decision(db, position, cutoff=None):
