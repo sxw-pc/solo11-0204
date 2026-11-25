@@ -16,7 +16,9 @@ ACTIONS = {
     'rework-slot': release.add_rework_slot, 'assess': release.assess,
     'reserve': release.reserve, 'finish-rework': release.finish,
     'dispatch': settlement.dispatch, 'balance': settlement.balance,
-    'energy-meter': meter.register, 'energy-reading': meter.capture, 'energy-statement': energy.statement,
+    'energy-meter': meter.register, 'energy-load': meter.register_load,
+    'energy-reading': meter.capture, 'energy-master': meter.capture_master_voucher,
+    'energy-statement': energy.statement,
 }
 
 

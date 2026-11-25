@@ -65,3 +65,14 @@ CREATE TABLE IF NOT EXISTS energy_reading (
     document TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS energy_reading_calendar ON energy_reading (meter_id, minute);
+CREATE TABLE IF NOT EXISTS energy_meter_load (
+    meter_id TEXT PRIMARY KEY REFERENCES energy_meter(id),
+    max_watts INTEGER NOT NULL CHECK(max_watts > 0),
+    document TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS energy_master_voucher (
+    id TEXT PRIMARY KEY, begin_minute INTEGER NOT NULL CHECK(begin_minute >= 0),
+    end_minute INTEGER NOT NULL CHECK(end_minute > begin_minute),
+    watt_hours INTEGER NOT NULL CHECK(watt_hours >= 0), document TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS energy_master_calendar ON energy_master_voucher (begin_minute, end_minute);
