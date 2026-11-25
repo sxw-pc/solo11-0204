@@ -35,6 +35,18 @@ python -B -m kiln_cars --db kiln.sqlite action --help
 数据库按操作获取 SQLite 写事务，冲突检查、扣占和过账在事务内完成。独立见证人使用与记录仪责任方不同的登记标识，登记员负责核对现场身份和见证片来源。温窗和色方规则是本地夹具口径，CLI 只记录业务证据和决定。
 
 
-## 耗材去向
+## 耗材去向与实物隔离
 
-操作 material-arrival 按单一已知批次登记原箱数量与来源单，material-pick 将数量拨到登记的窑车和区，material-return 将实际退回量归还原箱。material-locate 列出一个批次的剩余库存和当前各位置保有的数量。
+操作 material-arrival 按单一已知批次登记原箱数量与来源单；同箱多批次用 material-split-arrival 按供应箱原件号拆成实物段，无书证的段留空批次。material-pick 将数量拨到登记的窑车和区，material-pick-line 只扫箱号和数量登记采录行，再用 material-direct-line 指到车区；material-return 将实际退回量归还原箱。退回余量只能整体进入一次后续领用（material-pick 的 `reissue`），再领行不得再退、不得拆分。material-locate 列出一个批次的剩余库存和当前各位置保有的数量。
+
+同箱候选数量在库存、采录行、车区和隔离位之间按箱守恒，同一实物不会在两个车区各算一份。供应追溯分两级补证：material-composition 登记箱内批次多集（只有问题批次总数时同样适用），material-packing 把可定位的装箱记录绑到原收据行。隔离口径按所有仍可行的实物分配计算：
+
+| 裁决 | 含义 |
+| --- | --- |
+| `ISOLATED` | 每一可行分配中问题批次都在该 holder，物件与车区必须隔离 |
+| `SUSPECT` | 存在问题批次落在该 holder 的可行分配，按最小安全范围停领 |
+| `CLEAR` | 已证不可能含该批次，可继续领用 |
+
+`isolation <lot>` 只读查看隔离指令（含各 holder 裁决、守恒账和当前冻结）。isolation-impose 把指令落成停领：受冻结的车区、整箱或隔离位拒绝新领用、再分发和退回；isolation-reconcile 仅放行已证 CLEAR 的 holder，原地停用（isolation-hold）与隔离组等操作性冻结保留到各自解除步骤。无法当场辨认的实物用 isolation-hold 原地停用，车区冻结到独立装箱证据补齐，再用 isolation-release-hold 解除。
+
+整组可能受影响的实物经 quarantine-position 登记空置隔离位、quarantine-reserve 按仍可能一起到达的实际垫片组预留容量（容量不足拒收）、quarantine-transfer 整体转出；原车区停领只有在 quarantine-verify 凭原收据核定后才解除。晚到的原件只能解除它直接证明的实物，余量的局部正常不能覆盖另一份待核关系。同源书证原样重传幂等，冲突内容或超出原收据数量的补投拒收。

@@ -56,6 +56,41 @@ CREATE TABLE IF NOT EXISTS settlement (
     assessment_id INTEGER NOT NULL REFERENCES assessment(seq), cents INTEGER NOT NULL CHECK(cents>=0)
 );
 
-CREATE TABLE IF NOT EXISTS material_carton (id TEXT PRIMARY KEY, lot TEXT NOT NULL, units INTEGER NOT NULL CHECK(units>0), document TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS material_pick (id TEXT PRIMARY KEY, carton TEXT NOT NULL REFERENCES material_carton, firing_id TEXT NOT NULL, car TEXT NOT NULL, zone TEXT NOT NULL, units INTEGER NOT NULL CHECK(units>0), FOREIGN KEY(firing_id,car,zone) REFERENCES kiln_slot(firing_id,car,zone));
+CREATE TABLE IF NOT EXISTS material_carton (
+    id TEXT PRIMARY KEY, lot TEXT, units INTEGER NOT NULL CHECK(units>0), document TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS material_segment (
+    id TEXT PRIMARY KEY, carton TEXT NOT NULL REFERENCES material_carton,
+    units INTEGER NOT NULL CHECK(units>0), lot TEXT, document TEXT
+);
+CREATE TABLE IF NOT EXISTS material_pick (
+    id TEXT PRIMARY KEY, carton TEXT NOT NULL REFERENCES material_carton,
+    firing_id TEXT, car TEXT, zone TEXT, units INTEGER NOT NULL CHECK(units>0),
+    picked_at TEXT NOT NULL, reissue INTEGER NOT NULL DEFAULT 0 CHECK(reissue IN (0,1)),
+    FOREIGN KEY(firing_id,car,zone) REFERENCES kiln_slot(firing_id,car,zone)
+);
 CREATE TABLE IF NOT EXISTS material_return (id TEXT PRIMARY KEY, pick TEXT NOT NULL REFERENCES material_pick, units INTEGER NOT NULL CHECK(units>0));
+CREATE TABLE IF NOT EXISTS material_lot_proof (
+    seq INTEGER PRIMARY KEY, document TEXT NOT NULL, carton TEXT NOT NULL REFERENCES material_carton,
+    lot TEXT NOT NULL, units INTEGER NOT NULL CHECK(units>0),
+    pick TEXT REFERENCES material_pick, kind TEXT NOT NULL CHECK(kind IN ('composition','located'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS proof_carton_doc_lot ON material_lot_proof(carton,document,lot,pick);
+CREATE TABLE IF NOT EXISTS quarantine_position (
+    id TEXT PRIMARY KEY, capacity INTEGER NOT NULL CHECK(capacity>=0)
+);
+CREATE TABLE IF NOT EXISTS quarantine_reservation (
+    id TEXT PRIMARY KEY, position TEXT NOT NULL REFERENCES quarantine_position,
+    carton TEXT NOT NULL REFERENCES material_carton, units INTEGER NOT NULL CHECK(units>0),
+    state TEXT NOT NULL CHECK(state IN ('RESERVED','QUARANTINED','VERIFIED')),
+    pick TEXT REFERENCES material_pick
+);
+CREATE TABLE IF NOT EXISTS material_hold (
+    seq INTEGER PRIMARY KEY, kind TEXT NOT NULL CHECK(kind IN ('zone','carton','quarantine')),
+    firing_id TEXT, car TEXT, zone TEXT, carton TEXT, position TEXT,
+    reason TEXT NOT NULL, state TEXT NOT NULL CHECK(state IN ('FROZEN','RELEASED')),
+    group_id TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS hold_zone ON material_hold(firing_id,car,zone) WHERE kind='zone' AND state='FROZEN';
+CREATE UNIQUE INDEX IF NOT EXISTS hold_carton ON material_hold(carton) WHERE kind='carton' AND state='FROZEN';
+CREATE UNIQUE INDEX IF NOT EXISTS hold_quarantine ON material_hold(position) WHERE kind='quarantine' AND state='FROZEN';
